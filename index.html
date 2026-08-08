@@ -1846,6 +1846,78 @@ a.status-link{ color:var(--link); text-decoration:underline; cursor:pointer; wor
 }
 #my-status-pip{ width:10px !important; height:10px !important; }
 .status-line-row #btn-status-idea{ font-size:11px; padding:2px 5px; }
+
+.avatar.msg:not(:has(img)){
+  /* hash color applied inline; keep text readable */
+  color:#fff !important;
+}
+#chat-avatar:not(:has(img)){
+  color:#fff !important;
+}
+#my-avatar:not(:has(img)){
+  color:#fff !important;
+}
+.settings-cat{
+  font-size:12px; font-weight:700; color:var(--text2);
+  margin:14px 0 6px; padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+  letter-spacing:.02em;
+}
+.settings-cat:first-child{ margin-top:0; }
+.game-pop button{ font-size:13px; }
+
+.game-card{
+  padding:4px 2px;
+  min-width:100px;
+}
+
+.my-music-line{
+  display:block; max-width:100%; margin-top:4px;
+  font-size:11px; color:var(--link, #2980b9);
+  text-decoration:none; white-space:nowrap; overflow:hidden;
+  cursor:pointer; line-height:1.3;
+}
+.my-music-line .marquee-inner{
+  display:inline-block; padding-left:0;
+}
+.my-music-line.is-overflow .marquee-inner{
+  animation: music-scroll 8s linear infinite;
+  padding-left: 100%;
+}
+@keyframes music-scroll{
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+.my-music-line:hover{ text-decoration:underline; }
+
+.bj-actions button{
+  padding:4px 10px; border-radius:6px; cursor:pointer; font-size:12px;
+  border:1px solid var(--border2); background:var(--surface2); color:var(--text);
+}
+.bj-actions button:hover{ background:var(--hover); }
+
+.my-status{ flex-direction:column !important; align-items:stretch !important; gap:6px !important; }
+.my-status-top{ display:flex; align-items:center; gap:12px; min-width:0; width:100%; }
+.my-music-line{
+  display:block !important; width:100%; max-width:100%; box-sizing:border-box;
+  font-size:11px; color:var(--link, #2980b9);
+  text-decoration:none; white-space:nowrap; overflow:hidden;
+  cursor:pointer; line-height:1.35; padding:2px 2px 0;
+}
+.my-music-line[style*="display: none"], .my-music-line[style*="display:none"]{ display:none !important; }
+
+.msg-row.sent{ margin-top:10px !important; }
+.msg-row.received{ margin-top:10px !important; }
+.msg-row.sent + .msg-row.received,
+.msg-row.received + .msg-row.sent{ margin-top:16px !important; }
+.msg-row.cont{ margin-top:2px !important; }
+.bj-row{ display:flex; align-items:flex-start; gap:8px; max-width:100%; }
+.bj-side-actions{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; padding-top:4px; }
+.bj-side-actions button{
+  padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px;
+  border:1px solid var(--border2); background:var(--surface2); color:var(--text); white-space:nowrap;
+}
+.bj-side-actions button:hover{ background:var(--hover); }
 </style>
 </head>
 <body>
@@ -1945,6 +2017,7 @@ a.status-link{ color:var(--link); text-decoration:underline; cursor:pointer; wor
       </div>
       <div class="menubar-right">
         <span class="clock-box" id="local-clock" title="">--:--:--</span>
+        <button type="button" class="icon-btn" id="btn-self-silence" title="1 saat sessiz">🔕</button>
         <button type="button" class="icon-btn" id="theme-btn">🌙 Koyu</button>
       </div>
     </div>
@@ -1952,30 +2025,30 @@ a.status-link{ color:var(--link); text-decoration:underline; cursor:pointer; wor
     <div class="main-content">
       <div class="contacts-panel">
         <div class="my-status">
-          <div class="avatar" id="my-avatar">?</div>
-          <div class="my-info">
-            <div class="my-name-row" style="display:flex;align-items:center;gap:8px;">
+          <div class="my-status-top">
+            <div class="avatar" id="my-avatar" title="Durum değiştir">?</div>
+            <div class="my-info">
               <div class="my-name" id="my-displayname">Kullanıcı</div>
-              <span class="status-pip online" id="my-status-pip" title="Çevrimiçi" style="width:12px;height:12px;"></span>
-            </div>
-            <div class="my-status-text">
-              <div class="status-line-row">
-                <input type="text" id="my-custom-status" class="custom-status" placeholder="Durum metni..." maxlength="40">
-                <button type="button" id="btn-status-idea" title="Rastgele durum öner">🎲</button>
-              <button type="button" id="btn-self-silence" title="Kendini 1 saat sessize al">🔕</button>
+              <div class="my-status-text">
+                <div class="status-line-row">
+                  <input type="text" id="my-custom-status" class="custom-status" placeholder="Durum metni..." maxlength="40">
+                </div>
+                <select id="my-status-select">
+                  <option value="online">Çevrimiçi</option>
+                  <option value="busy">Meşgul</option>
+                  <option value="away">Dışarıda</option>
+                  <option value="offline">Görünmez</option>
+                </select>
               </div>
-              <select id="my-status-select">
-                <option value="online">Çevrimiçi</option>
-                <option value="busy">Meşgul</option>
-                <option value="away">Dışarıda</option>
-                <option value="offline">Görünmez</option>
-              </select>
             </div>
           </div>
+          <a class="my-music-line" id="my-music-line" href="#" style="display:none" title=""></a>
+          <span class="status-pip online" id="my-status-pip" style="display:none"></span>
         </div>
         <div class="toolbar-row">
-          <input type="text" id="add-friend-input" placeholder="Kullanıcı adı ara...">
+          <input type="text" id="add-friend-input" placeholder="Kullanıcı adı veya davet kodu...">
           <button type="button" id="btn-add-friend">Ara</button>
+          <button type="button" id="btn-my-invite" title="Davet kodunu kopyala">📨</button>
         </div>
         <div class="filters">
           <button type="button" class="filter-btn" id="filter-status" data-mode="all">Durum</button>
@@ -2437,7 +2510,14 @@ function avatarHtml(name,photo,cls,status){
 
 function initGun(){
   try{if(typeof Gun==='undefined')return false;
-    gun=Gun({peers:['https://gun-manhattan.herokuapp.com/gun','https://peer.wallie.io/gun'],localStorage:false,radisk:false});
+    gun=Gun({
+      peers:[
+        'https://peer.wallie.io/gun',
+        'https://gun-manhattan.herokuapp.com/gun',
+        'https://relay.gun.eco/gun'
+      ],
+      localStorage:false, radisk:false
+    });
     gunReady=true;return true;}catch(e){return false;}
 }
 function localGetAccounts(){try{return JSON.parse(sGet(PREFIX+'accounts')||'{}');}catch(e){return{};}}
@@ -2453,7 +2533,7 @@ function localSaveMsgs(id,arr){sSet(PREFIX+'msgs_'+id,JSON.stringify(arr.slice(-
 
 /* Theme system: family + light/dark */
 var THEME_FAMILIES = [
-  { id:'light',     name:'Turuncu',         icon:'🧡', sw1:'#f5b041', sw2:'#e67e22', defaultDark:false, lightId:'light',           darkId:'dark' },
+  { id:'light',     name:'İlkgüz',          icon:'🍁', sw1:'#f5b041', sw2:'#e67e22', defaultDark:false, lightId:'light',           darkId:'dark' },
   { id:'cyberpunk', name:'Cyberpunk',       icon:'🌆', sw1:'#ff00aa', sw2:'#00f0ff', defaultDark:true,  lightId:'cyberpunk-light', darkId:'cyberpunk' },
   { id:'classic',   name:'Klasik MSN',      icon:'💬', sw1:'#0a246a', sw2:'#a6caf0', defaultDark:false, lightId:'classic',        darkId:'classic-dark' },
   { id:'ocean',     name:'Okyanus',         icon:'🌊', sw1:'#0891b2', sw2:'#67e8f9', defaultDark:true,  lightId:'ocean-light',    darkId:'ocean-dark' },
@@ -2746,6 +2826,8 @@ function enterMessenger(){
     if(userSettings().idleAway!==false) try{ startIdleAway(); }catch(e){}
     try{ renderQuickReplies(); }catch(e){} var cs=document.getElementById('my-custom-status'); if(cs) cs.value=sGet(PREFIX+'customStatus_'+currentUser.alias)||''; }catch(e){ try{ensureTestBot();}catch(e2){} }
   document.getElementById('my-displayname').textContent=currentUser.name;
+  try{ updateMyMusicLine(); }catch(e){}
+  try{ publishDirectory(); }catch(e){}
   document.getElementById('window-title').textContent='İlkgüz MSN — '+currentUser.name;
   var st0=document.getElementById('my-status-select').value||'online';
   setAvatarEl(document.getElementById('my-avatar'),currentUser.name,currentUser.photo,st0);
@@ -3859,6 +3941,320 @@ function softClearInput(){
   clearEditor(); updateCharCount(); updateSendEnabled();
 }
 
+
+function openGameMenu(ev){
+  if(!activeChat){ showToast('Önce bir sohbet aç'); return; }
+  try{ closeContactMenu(); }catch(e){}
+  var old = document.getElementById('game-pop');
+  if(old){ old.remove(); return; }
+  var pop = document.createElement('div');
+  pop.className = 'contact-pop game-pop';
+  pop.id = 'game-pop';
+  pop.style.cssText = 'position:fixed;z-index:100060;min-width:200px;max-height:min(340px,55vh);overflow-y:auto;';
+  var games = [
+    { id:'num100', label:'🔢 1–100 (yüksek kazanır)' },
+    { id:'dice', label:'🎲 Zar (yüksek kazanır)' },
+    { id:'coin', label:'○ / ●  Yazı-tura' },
+    { id:'rps', label:'✊ Taş-kağıt-makas' },
+    { id:'bj', label:'🃏 Blackjack 21' }
+  ];
+  games.forEach(function(g){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = g.label;
+    b.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;border:none;background:transparent;color:var(--text);cursor:pointer;font-size:13px;';
+    b.onmouseover = function(){ b.style.background = 'var(--hover)'; };
+    b.onmouseout = function(){ b.style.background = 'transparent'; };
+    b.onclick = function(e){
+      e.stopPropagation();
+      pop.remove();
+      if(g.id==='bj') startBlackjack();
+      else playDuelGame(g.id);
+    };
+    pop.appendChild(b);
+  });
+  document.body.appendChild(pop);
+  var btn = document.getElementById('btn-game');
+  var rect = btn ? btn.getBoundingClientRect() : null;
+  var ph = pop.offsetHeight || 200;
+  var pw = pop.offsetWidth || 200;
+  var left = rect ? rect.left : 100;
+  var top = rect ? (rect.top - ph - 8) : 100;
+  if(top < 8) top = rect ? (rect.bottom + 8) : 8;
+  if(left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  if(left < 8) left = 8;
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  setTimeout(function(){
+    document.addEventListener('click', function(){
+      var p = document.getElementById('game-pop'); if(p) p.remove();
+    }, {once:true});
+  }, 30);
+}
+
+
+var bjState = null;
+function cardVal(c){ var v=c%13; if(v>=10) return 10; if(v===0) return 11; return v+1; }
+function cardLabel(c){
+  var faces=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  var suits=['♠','♥','♦','♣'];
+  return faces[c%13]+suits[Math.floor(c/13)%4];
+}
+function handTotal(cards){
+  var t=0, aces=0;
+  cards.forEach(function(c){ var v=cardVal(c); t+=v; if(v===11) aces++; });
+  while(t>21 && aces>0){ t-=10; aces--; }
+  return t;
+}
+function dealCard(used){
+  var c;
+  do { c = Math.floor(Math.random()*52); } while(used[c]);
+  used[c]=1;
+  return c;
+}
+
+function startBlackjack(){
+  if(!activeChat || !currentUser) return;
+  var used = {};
+  var player = [dealCard(used), dealCard(used)];
+  var dealer = [dealCard(used), dealCard(used)];
+  bjState = { used:used, player:player, dealer:dealer, chat:activeChat, done:false };
+  renderBjMessage(false);
+}
+function renderBjMessage(reveal){
+  if(!bjState) return;
+  var p = bjState.player, d = bjState.dealer;
+  var pLab = p.map(cardLabel).join(' ');
+  var dLab = reveal ? d.map(cardLabel).join(' ') : (cardLabel(d[0])+' 🂠');
+  var pt = handTotal(p), dt = handTotal(d);
+  var status = '';
+  if(bjState.done){
+    if(pt>21) status = 'Battın!';
+    else if(dt>21) status = 'Kasa battı, kazandın!';
+    else if(pt>dt) status = 'Kazandın!';
+    else if(pt<dt) status = 'Kasa kazandı';
+    else status = 'Berabere';
+  } else {
+    status = 'Kart çek veya pas geç';
+  }
+  var html = '<div class="bj-row"><div class="game-card bj-card" data-bj="1">'
+    +'<b>🃏 Blackjack</b>'
+    +'<div style="margin-top:6px">Sen: <b>'+escapeHtml(pLab)+'</b> ('+pt+')</div>'
+    +'<div>Kasa: <b>'+escapeHtml(dLab)+'</b>'+(reveal?(' ('+dt+')'):'')+'</div>'
+    +'<div style="margin-top:6px;font-size:12px">'+escapeHtml(status)+'</div>'
+    +'</div>';
+  if(!bjState.done){
+    html += '<div class="bj-side-actions">'
+      +'<button type="button" class="bj-hit">Kart çek</button>'
+      +'<button type="button" class="bj-stand">Pas geç</button></div>';
+  }
+  html += '</div>';
+  var msg = {
+    id: bjState.msgId || ('m'+Date.now()+Math.random().toString(36).slice(2,8)),
+    from: currentUser.alias, fromName: currentUser.name, to: bjState.chat,
+    text: 'Blackjack: '+pt+(bjState.done?(' - '+status):''),
+    html: html, type:'game', game:'bj', time: Date.now(), photo: currentUser.photo||''
+  };
+  bjState.msgId = msg.id;
+  var id = getChatKey(bjState.chat);
+  var arr = (msgCache[id]||localGetMsgs(id)||[]).slice();
+  var found = -1;
+  for(var i=0;i<arr.length;i++){ if(arr[i]&&arr[i].id===msg.id){ found=i; break; } }
+  if(found>=0) arr[found]=msg; else arr.push(msg);
+  localSaveMsgs(id, arr); msgCache[id]=arr;
+  if(activeChat===bjState.chat) renderMessageList(bjState.chat, arr);
+}
+function bjHit(){
+  if(!bjState||bjState.done) return;
+  bjState.player.push(dealCard(bjState.used));
+  if(handTotal(bjState.player)>21){ bjState.done=true; renderBjMessage(true); bjState=null; return; }
+  renderBjMessage(false);
+}
+function bjStand(){
+  if(!bjState||bjState.done) return;
+  while(handTotal(bjState.dealer)<17) bjState.dealer.push(dealCard(bjState.used));
+  bjState.done=true;
+  renderBjMessage(true);
+  bjState=null;
+}
+
+function playDuelGame(kind){
+  if(!activeChat || !currentUser) return;
+  var myVal, label, sub, display;
+  var rpsMap = {0:'✊ Taş',1:'✋ Kağıt',2:'✌️ Makas'};
+  if(kind==='dice'){
+    myVal = 1 + Math.floor(Math.random()*6);
+    label = '🎲 Zar'; display = String(myVal); sub = 'Yüksek atan kazanır (1–6)';
+  } else if(kind==='coin'){
+    myVal = Math.random()<0.5 ? 0 : 1;
+    label = 'Yazı-tura'; display = myVal ? '●  Tura' : '○  Yazı'; sub = 'Şans oyunu';
+  } else if(kind==='rps'){
+    myVal = Math.floor(Math.random()*3);
+    label = '✊ Taş-kağıt-makas'; display = rpsMap[myVal]; sub = 'Taş>Makas>Kağıt>Taş';
+  } else {
+    myVal = 1 + Math.floor(Math.random()*100);
+    label = '🔢 1–100'; display = String(myVal); sub = 'Yüksek atan kazanır (1–100)';
+  }
+  var msg = {
+    id: 'm'+Date.now()+Math.random().toString(36).slice(2,8),
+    from: currentUser.alias, fromName: currentUser.name, to: activeChat,
+    text: label+': '+display,
+    html: '<div class="game-card"><b>'+escapeHtml(label)+'</b><div style="font-size:20px;font-weight:700;margin-top:4px">'+escapeHtml(display)+'</div><div style="font-size:11px;opacity:.75;margin-top:4px">'+escapeHtml(sub)+'</div></div>',
+    type: 'game', game: kind, gameValue: myVal, time: Date.now(), photo: currentUser.photo||''
+  };
+  pushAndSend(msg, activeChat);
+  showToast(label+': '+display);
+  if(activeChat === TEST_BOT){
+    setTimeout(function(){
+      var botVal, botDisp, result;
+      if(kind==='dice'){
+        botVal = 1+Math.floor(Math.random()*6); botDisp=String(botVal);
+        result = botVal>myVal?'Test Bot kazandı!':(botVal<myVal?'Sen kazandın!':'Berabere!');
+      } else if(kind==='coin'){
+        botVal = Math.random()<0.5?0:1; botDisp=botVal?'Tura':'Yazı';
+        result = botVal===myVal?'Aynı!':'Farklı — ikiniz de attınız';
+      } else if(kind==='rps'){
+        botVal = Math.floor(Math.random()*3); botDisp=rpsMap[botVal];
+        if(botVal===myVal) result='Berabere!';
+        else if((myVal===0&&botVal===2)||(myVal===1&&botVal===0)||(myVal===2&&botVal===1)) result='Sen kazandın!';
+        else result='Test Bot kazandı!';
+      } else {
+        botVal = 1+Math.floor(Math.random()*100); botDisp=String(botVal);
+        result = botVal>myVal?'Test Bot kazandı!':(botVal<myVal?'Sen kazandın!':'Berabere!');
+      }
+      var bmsg = {
+        id:'m'+Date.now()+Math.random().toString(36).slice(2,8),
+        from:TEST_BOT, fromName:'Test Bot', to:currentUser.alias,
+        text: label+': '+botDisp+' — '+result,
+        html: '<div class="game-card"><b>'+escapeHtml(label)+'</b><div style="font-size:20px;font-weight:700;margin-top:4px">'+escapeHtml(botDisp)+'</div><div style="font-size:12px;margin-top:6px">'+escapeHtml(result)+'</div></div>',
+        type:'game', game:kind, gameValue:botVal, time:Date.now()
+      };
+      var id=getChatKey(TEST_BOT);
+      var arr=localGetMsgs(id); arr.push(bmsg); localSaveMsgs(id,arr); msgCache[id]=arr;
+      if(activeChat===TEST_BOT) renderMessageList(TEST_BOT, arr);
+      try{ renderContacts(); }catch(e){}
+    }, 600+Math.random()*500);
+  }
+}
+
+
+function parseMusicDisplay(raw){
+  raw = (raw||'').trim();
+  if(!raw) return null;
+  var url = null, label = raw, icon = '🎵';
+  var m = raw.match(/https?:\/\/[^\s]+/i);
+  if(m){
+    url = m[0];
+    label = raw.replace(m[0], '').trim();
+    try{
+      var host = (new URL(url)).hostname.replace(/^www\./,'');
+      if(host.indexOf('spotify')>=0) icon='🟢';
+      else if(host.indexOf('youtube')>=0||host.indexOf('youtu.be')>=0) icon='▶️';
+      else if(host.indexOf('soundcloud')>=0) icon='🟠';
+      else if(host.indexOf('apple')>=0||host.indexOf('music.apple')>=0) icon='🍎';
+      else if(host.indexOf('deezer')>=0) icon='🎵';
+      else icon='🔗';
+      // Try to extract title from path if user only pasted URL
+      if(!label){
+        var path = (new URL(url)).pathname || '';
+        // Spotify: /track/xxx — no title in URL; keep generic short hint
+        if(host.indexOf('spotify')>=0) label = 'Spotify parçası';
+        else if(host.indexOf('youtube')>=0||host.indexOf('youtu.be')>=0) label = 'YouTube videosu';
+        else label = host;
+      }
+    }catch(e){ icon='🔗'; if(!label) label = 'şarkı'; }
+  }
+  // Prefer "Sanatçı - Şarkı" text the user typed alongside the URL
+  return { url:url, label:label, icon:icon, raw:raw };
+}
+function updateMyMusicLine(){
+  var el = document.getElementById('my-music-line');
+  if(!el || !currentUser) return;
+  var raw = sGet(PREFIX+'music_'+currentUser.alias)||'';
+  var info = parseMusicDisplay(raw);
+  if(!info){ el.style.display='none'; el.removeAttribute('href'); return; }
+  el.style.display='block';
+  el.innerHTML = '<span class="marquee-inner">'+escapeHtml(info.icon)+' '+escapeHtml(info.label)+'</span>';
+  el.title = info.raw;
+  if(info.url){
+    el.href = info.url;
+    el.onclick = function(e){
+      e.preventDefault();
+      confirmOpenLink(info.url);
+    };
+  } else {
+    el.href = '#';
+    el.onclick = function(e){ e.preventDefault(); };
+  }
+  // overflow marquee
+  setTimeout(function(){
+    var inner = el.querySelector('.marquee-inner');
+    if(inner && inner.scrollWidth > el.clientWidth + 4) el.classList.add('is-overflow');
+    else el.classList.remove('is-overflow');
+  }, 50);
+}
+
+
+
+function handleInviteQuery(){
+  try{
+    var q = new URLSearchParams(location.search||'');
+    var add = q.get('add') || q.get('invite');
+    if(!add) return;
+    // wait until logged in
+    var tries=0;
+    var t=setInterval(function(){
+      tries++;
+      if(currentUser){
+        clearInterval(t);
+        var input=document.getElementById('add-friend-input');
+        if(input){ input.value = add; }
+        try{ searchUser(); }catch(e){}
+        showToast('Davet: @'+add);
+        // clean URL
+        try{ history.replaceState({}, '', location.pathname); }catch(e){}
+      }
+      if(tries>40) clearInterval(t);
+    }, 500);
+  }catch(e){}
+}
+
+function publishDirectory(){
+  if(!currentUser) return;
+  var payload = {
+    alias: currentUser.alias,
+    name: currentUser.name||currentUser.alias,
+    photo: currentUser.photo||'',
+    updated: Date.now()
+  };
+  // Always local mirror of known users on this device
+  try{
+    var dir = JSON.parse(sGet(PREFIX+'dir_cache')||'{}');
+    dir[currentUser.alias] = payload;
+    sSet(PREFIX+'dir_cache', JSON.stringify(dir));
+  }catch(e){}
+  if(gun){
+    try{
+      gun.get(PREFIX+'dir').get(currentUser.alias).put(payload);
+      gun.get(PREFIX+'accounts').get(currentUser.alias).get('name').put(payload.name);
+      gun.get(PREFIX+'accounts').get(currentUser.alias).get('alias').put(payload.alias);
+      gun.get(PREFIX+'accounts').get(currentUser.alias).get('photo').put(payload.photo||'');
+    }catch(e){}
+  }
+}
+function makeInviteCode(alias){
+  try{ return 'ig_'+btoa(unescape(encodeURIComponent(alias||''))).replace(/=+$/,''); }catch(e){ return 'ig_'+alias; }
+}
+function parseInviteCode(s){
+  s = (s||'').trim();
+  if(/^ig_/i.test(s)){
+    try{ return decodeURIComponent(escape(atob(s.slice(3)))); }catch(e){
+      try{ return atob(s.slice(3)); }catch(e2){ return ''; }
+    }
+  }
+  return '';
+}
+
 function updateScrollJump(){
   var box = document.getElementById('messages');
   var up = document.getElementById('btn-scroll-up');
@@ -4473,6 +4869,7 @@ function openChat(alias){
     listenTyping(alias);
   }
   setUnread(alias, 0);
+  try{ sSet(PREFIX+'lastRead_'+currentUser.alias+'_'+alias, String(Date.now())); }catch(e){}
   try{ clearEditor(); updateCharCount(); }catch(e){}
   renderContacts();loadMessages(alias);applyUiSettings();editorFocus();
   setTimeout(function(){ loadDraft(); updateCharCount(); editorFocus(); }, 60);
@@ -4598,8 +4995,13 @@ function renderOneMessage(msg,alias,isContinuation,msgIndex){
 
   var left=document.createElement('div'); left.className='msg-leftcol';
   var av=document.createElement('div'); av.className='avatar msg';
-  if(photo) av.innerHTML='<img src="'+photo+'" alt="">';
-  else av.textContent=initials(name);
+  if(photo){
+    av.innerHTML='<img src="'+photo+'" alt="">';
+    av.style.setProperty('background','transparent','important');
+  } else {
+    av.textContent=initials(name);
+    av.style.setProperty('background', hashColor(name||msg.from||'?'), 'important');
+  }
   left.appendChild(av);
   var uname=document.createElement('div'); uname.className='msg-uname';
   uname.title = name; uname.textContent = name;
@@ -4881,31 +5283,104 @@ function shakeWindow(){
 /* FRIENDS */
 function searchUser(){
   var input=document.getElementById('add-friend-input');
-  var alias=input.value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-  if(!alias)return;
-  if(alias===currentUser.alias)return alert('Kendini ekleyemezsin.');
-  if(friends[alias])return alert('Zaten arkadaşın.');
-  document.getElementById('status-text').textContent='Aranıyor...';
+  var raw=(input.value||'').trim();
+  // Extract from full URL like https://site.netlify.app/?add=user or broken nullsrcdoc?add=user
+  var addMatch = raw.match(/[?&]add=([^&#\s]+)/i) || raw.match(/add=([^&#\s]+)/i);
+  if(addMatch){
+    try{ raw = decodeURIComponent(addMatch[1]); }catch(e){ raw = addMatch[1]; }
+  }
+  var fromInvite = parseInviteCode(raw);
+  var alias = (fromInvite || raw).toLowerCase().replace(/[^a-z0-9_]/g,'');
+  // strip garbage tokens
+  if(alias.indexOf('null')===0 && alias.indexOf('srcdoc')>=0){
+    showToast('Geçersiz davet. 📨 ile kodu yeniden kopyala'); return;
+  }
+  if(!alias || alias==='null' || alias==='srcdoc'){ showToast('Kullanıcı adı veya davet kodu gir'); return; }
+  if(!currentUser) return;
+  if(alias===currentUser.alias){ alert('Kendinizi arattınız. Kendinize istek gönderemezsiniz.'); return; }
+  if(friends[alias]){ alert('Zaten arkadaşın.'); return; }
+  document.getElementById('status-text').textContent='Aranıyor: @'+alias+'...';
   function showPreview(acc){
-    pendingPreview={alias:alias,name:acc.name||alias,photo:acc.photo||''};
+    pendingPreview={alias:alias,name:(acc&&acc.name)||alias,photo:(acc&&acc.photo)||''};
     document.getElementById('add-preview').innerHTML=avatarHtml(pendingPreview.name,pendingPreview.photo,'md')+'<div><div style="font-weight:600">'+escapeHtml(pendingPreview.name)+'</div><div style="font-size:12px;color:var(--text3)">@'+alias+'</div></div>';
     document.getElementById('add-modal').classList.add('open');
     document.getElementById('status-text').textContent='Hazır';
   }
+  // 1) local accounts
   var local=localGetAccounts();
-  if(local[alias]){showPreview(local[alias]);return;}
-  if(!gun){document.getElementById('status-text').textContent='Hazır';return alert('Kullanıcı bulunamadı.');}
+  if(local[alias]){ showPreview(local[alias]); return; }
+  // 2) local dir cache
+  try{
+    var cache=JSON.parse(sGet(PREFIX+'dir_cache')||'{}');
+    if(cache[alias]){ showPreview(cache[alias]); return; }
+  }catch(e){}
+  // 3) Even without Gun: allow adding by exact username (pending until they accept via Gun)
+  if(!gunReady) try{ initGun(); }catch(e){}
+  if(!gun){
+    // Soft add: create pending friend request locally + show preview
+    showPreview({alias:alias,name:alias,photo:''});
+    showToast('Çevrimdışı dizin — istek Gun bağlanınca iletilir');
+    return;
+  }
   var resolved=false;
-  setTimeout(function(){if(!resolved){resolved=true;document.getElementById('status-text').textContent='Hazır';alert('Kullanıcı bulunamadı.');}},4000);
-  setTimeout(function(){gun.get(PREFIX+'accounts').get(alias).once(function(acc){if(resolved)return;if(!acc||!acc.alias)return;resolved=true;showPreview(acc);});},600);
+  function fail(){
+    if(resolved) return;
+    resolved=true;
+    // Still allow manual add by username
+    showPreview({alias:alias,name:alias,photo:''});
+    showToast('Dizinde yok — yine de istek gönderebilirsin');
+  }
+  setTimeout(fail, 5000);
+  // directory first
+  gun.get(PREFIX+'dir').get(alias).once(function(acc){
+    if(resolved) return;
+    if(acc && (acc.alias||acc.name)){
+      resolved=true;
+      try{
+        var cache=JSON.parse(sGet(PREFIX+'dir_cache')||'{}');
+        cache[alias]=acc; sSet(PREFIX+'dir_cache', JSON.stringify(cache));
+      }catch(e){}
+      showPreview(acc);
+    }
+  });
+  setTimeout(function(){
+    if(resolved) return;
+    gun.get(PREFIX+'accounts').get(alias).once(function(acc){
+      if(resolved) return;
+      if(acc && (acc.alias||acc.name)){
+        resolved=true;
+        showPreview(acc);
+      }
+    });
+  }, 400);
+  setTimeout(function(){
+    if(resolved) return;
+    gun.get(PREFIX+'presence').get(alias).once(function(p){
+      if(resolved) return;
+      if(p && (p.name||p.status)){
+        resolved=true;
+        showPreview({alias:alias,name:p.name||alias,photo:p.photo||''});
+      }
+    });
+  }, 800);
 }
 function sendFriendRequest(){
   if(!pendingPreview||!currentUser)return;
   var to=pendingPreview.alias;
-  if(gun)gun.get(PREFIX+'requests').get(to).get(currentUser.alias).put({from:currentUser.alias,fromName:currentUser.name,fromPhoto:currentUser.photo||'',time:Date.now(),status:'pending'});
+  var payload={from:currentUser.alias,fromName:currentUser.name,fromPhoto:currentUser.photo||'',time:Date.now(),status:'pending'};
+  if(gun){
+    try{ gun.get(PREFIX+'requests').get(to).get(currentUser.alias).put(payload); }catch(e){}
+    try{ publishDirectory(); }catch(e){}
+  }
+  // local pending outbox so we can retry
+  try{
+    var out=JSON.parse(sGet(PREFIX+'outbox_'+currentUser.alias)||'{}');
+    out[to]=payload; sSet(PREFIX+'outbox_'+currentUser.alias, JSON.stringify(out));
+  }catch(e){}
   document.getElementById('add-modal').classList.remove('open');
   document.getElementById('add-friend-input').value='';
   document.getElementById('status-text').textContent='İstek gönderildi: @'+to;
+  showToast('İstek gönderildi — arkadaşın Bildirimler’den kabul etmeli');
   pendingPreview=null;
 }
 function listenRequests(){
@@ -5023,6 +5498,7 @@ function saveProfile(){
   var musicVal = pm ? (pm.value||'').trim() : '';
   sSet(PREFIX+'music_'+currentUser.alias, musicVal);
   try{ publishMusicStatus(musicVal); }catch(e){}
+  try{ updateMyMusicLine(); }catch(e){}
   currentUser.name=name;sSet(PREFIX+'session',JSON.stringify(currentUser));
   var loc=localGetAccounts();if(loc[currentUser.alias]){loc[currentUser.alias].name=name;loc[currentUser.alias].photo=currentUser.photo||'';localSaveAccounts(loc);}
   setAvatarEl(document.getElementById('my-avatar'), currentUser.name, currentUser.photo||'');
@@ -5034,6 +5510,72 @@ function saveProfile(){
 }
 
 
+function getHatchScript(){
+  var fam = themeFamily || 'light';
+  var scripts = {
+    light: [
+      { e:'🥚', m:'Yumurta canlanıyor...' },
+      { e:'🐣', m:'Civciv ortaya çıkıyor!' },
+      { e:'🐥', m:'Artık konuşmaya hazırsınız.' }
+    ],
+    forest: [
+      { e:'🌱', m:'Fide toprağa tutunuyor...' },
+      { e:'🌿', m:'Filiz büyüyor...' },
+      { e:'🌲', m:'Orman hazır, sesler duyuluyor.' }
+    ],
+    ocean: [
+      { e:'💧', m:'Damla suya düşüyor...' },
+      { e:'🌊', m:'Dalga yükseliyor...' },
+      { e:'🐠', m:'Sular duruldu, merhaba diyebilirsiniz.' }
+    ],
+    cyberpunk: [
+      { e:'⚡', m:'Devre çalıştırılıyor...' },
+      { e:'🔌', m:'Bağlantı kuruluyor...' },
+      { e:'📡', m:'Şebeke açık, sinyal net.' }
+    ],
+    classic: [
+      { e:'💾', m:'Oturum açılıyor...' },
+      { e:'🪟', m:'Pencere yükleniyor...' },
+      { e:'💬', m:'Messenger hazır.' }
+    ],
+    lavender: [
+      { e:'💜', m:'Tomurcuk uyanıyor...' },
+      { e:'🌸', m:'Çiçek açıyor...' },
+      { e:'✨', m:'Bahçe sakin, yazabilirsiniz.' }
+    ],
+    nord: [
+      { e:'❄️', m:'Kar tanesi düşüyor...' },
+      { e:'🧊', m:'Buz çözülüyor...' },
+      { e:'🔥', m:'Şömine yanıyor, ısının.' }
+    ],
+    sakura: [
+      { e:'🌸', m:'Tomurcuk bekliyor...' },
+      { e:'🌺', m:'Rüzgâr yaprak savuruyor...' },
+      { e:'🍃', m:'Bahar geldi, merhaba deyin.' }
+    ],
+    matrix: [
+      { e:'⌨️', m:'Kod akıyor...' },
+      { e:'🟢', m:'Sütunlar hizalanıyor...' },
+      { e:'💊', m:'Sistem online, seçiminiz.' }
+    ],
+    gold: [
+      { e:'✨', m:'Kıvılcım çakıyor...' },
+      { e:'👑', m:'Taç parlıyor...' },
+      { e:'🏆', m:'Salon açık, buyurun.' }
+    ],
+    winxp: [
+      { e:'🖥️', m:'Açılış...' },
+      { e:'▶️', m:'Hoş geldiniz...' },
+      { e:'📁', m:'Masaüstü hazır.' }
+    ],
+    vista: [
+      { e:'💎', m:'Cam parlıyor...' },
+      { e:'🌈', m:'Aero yükleniyor...' },
+      { e:'✅', m:'Vista hazır, başlayın.' }
+    ]
+  };
+  return scripts[fam] || scripts.light;
+}
 function showHatchLoader(doneCallback){
   var overlay = document.getElementById('hatch-loader');
   var em = document.getElementById('hatch-emojis');
@@ -5043,36 +5585,32 @@ function showHatchLoader(doneCallback){
     if(doneCallback) doneCallback();
     return;
   }
-
+  var steps = getHatchScript();
   overlay.classList.add('show');
   overlay.style.display = 'flex';
   overlay.setAttribute('aria-hidden','false');
-
-  em.textContent = '🥚';
+  em.textContent = steps[0].e;
   if(dots) dots.textContent = '';
-  msg.textContent = 'Yumurta canlanıyor...';
+  msg.textContent = steps[0].m;
 
   function addDots(count, then){
-    if(!dots){ setTimeout(then, 500); return; }
+    if(!dots){ setTimeout(then, 450); return; }
     dots.textContent = '';
     var i = 0;
     var t = setInterval(function(){
       i++;
       dots.textContent = '.'.repeat(i);
-      if(i >= count){
-        clearInterval(t);
-        setTimeout(then, 400);
-      }
-    }, 300);
+      if(i >= count){ clearInterval(t); setTimeout(then, 350); }
+    }, 280);
   }
 
   addDots(3, function(){
-    em.textContent = '🥚🐣';
-    msg.textContent = 'Civciv ortaya çıkıyor!';
+    em.textContent = steps[1].e;
+    msg.textContent = steps[1].m;
     if(dots) dots.textContent = '';
     addDots(3, function(){
-      em.textContent = '🐥';
-      msg.textContent = 'Artık konuşmaya hazırsınız.';
+      em.textContent = steps[2].e;
+      msg.textContent = steps[2].m;
       if(dots) dots.textContent = '';
       setTimeout(function(){
         overlay.classList.remove('show');
@@ -5083,6 +5621,7 @@ function showHatchLoader(doneCallback){
     });
   });
 }
+
 
 
 
@@ -5100,7 +5639,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var dark = sGet(PREFIX+'themeIsDark')==='1';
     if(fam){ themeFamily = fam; themeIsDark = dark; applyTheme(themeIsDark && fam!=='light' ? fam+'-dark' : (dark?'dark':fam)); }
     else { applyTheme(saved); }
-  })();buildEmojiPicker();initGun();
+  })();buildEmojiPicker();initGun();handleInviteQuery();
   document.getElementById('show-register').onclick=function(e){e.preventDefault();showForm('register');};
   document.getElementById('show-login').onclick=function(e){e.preventDefault();showForm('login');};
   document.getElementById('show-login2').onclick=function(e){e.preventDefault();showForm('login');};
@@ -5110,8 +5649,29 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('btn-forgot').onclick=resetPassword;
   document.getElementById('btn-logout').onclick=logout;
   document.getElementById('btn-add-friend').onclick=searchUser;
+  var _inv=document.getElementById('btn-my-invite');
+  if(_inv) _inv.onclick=function(){
+    if(!currentUser) return;
+    // Prefer real host; avoid null/srcdoc from sandboxed iframes
+    var origin = (location.origin && location.origin !== 'null') ? location.origin : '';
+    var path = (location.pathname && location.pathname.indexOf('srcdoc')<0) ? location.pathname : '/';
+    var link;
+    if(origin && origin.indexOf('http')===0){
+      link = origin + path + (path.indexOf('?')>=0?'&':'?') + 'add=' + encodeURIComponent(currentUser.alias);
+    } else {
+      // Fallback: invite code only (works in Ara box)
+      link = makeInviteCode(currentUser.alias);
+    }
+    window.__msnCopyText(link, _inv);
+    showToast(origin ? 'Davet linki kopyalandı' : 'Davet kodu kopyalandı (Ara kutusuna yapıştır)');
+  };
   document.getElementById('btn-send-request').onclick=sendFriendRequest;
   document.getElementById('btn-send').onclick=sendMessage;
+  document.addEventListener('click', function(e){
+    if(e.target && e.target.classList && e.target.classList.contains('bj-hit')){ e.preventDefault(); bjHit(); }
+    if(e.target && e.target.classList && e.target.classList.contains('bj-stand')){ e.preventDefault(); bjStand(); }
+  });
+
   var baq=document.getElementById('btn-add-qr'); if(baq) baq.onclick=function(e){ e.preventDefault(); e.stopPropagation(); openQuickReplyMenu(e); };
   try{ renderQuickReplies(); }catch(e){}
 
@@ -5259,17 +5819,9 @@ document.addEventListener('DOMContentLoaded',function(){
   };
   var _bi=document.getElementById('btn-image'); if(_bi) _bi.onclick=function(){ document.getElementById('file-input').click(); };
   var _fi=document.getElementById('file-input'); if(_fi) _fi.onchange=function(){ if(this.files&&this.files[0]) sendImageFile(this.files[0]); this.value=''; };
-  var _gameCycle = 0;
-  var _bg=document.getElementById('btn-game'); if(_bg) _bg.onclick=function(){
-    if(!activeChat){ showToast('Önce soldan Notlarım veya Test Bot aç'); return; }
-    var modes = ['coin','dice','xox'];
-    var mode = modes[_gameCycle % 3];
-    _gameCycle++;
-    if(mode==='xox' && activeChat==='__self__'){ mode='coin'; showToast('XOX için Test Bot ile aç'); }
-    sendGame(mode);
-    if(activeChat===TEST_BOT && (mode==='coin'||mode==='dice')){
-      setTimeout(function(){ botReplyTo('', 'game'); }, 700);
-    }
+  var _bg=document.getElementById('btn-game'); if(_bg) _bg.onclick=function(e){
+    e.preventDefault(); e.stopPropagation();
+    openGameMenu(e);
   };
 
   var _mcs=document.getElementById('my-custom-status');
@@ -5359,14 +5911,16 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('filter-alpha').onclick=cycleAlpha;
   document.getElementById('filter-fav').onclick=toggleFavFilter;
   var pip=document.getElementById('my-status-pip');
-  if(pip){ pip.style.cursor='pointer'; pip.title='Tıkla: durum değiştir'; pip.onclick=cycleMyStatusPip; }
+  if(pip){ pip.onclick=cycleMyStatusPip; }
+  var av=document.getElementById('my-avatar');
+  if(av){ av.style.cursor='pointer'; av.title='Tıkla: durum değiştir'; av.onclick=cycleMyStatusPip; }
   setInterval(updateUnreadTitle, 4000);
 
 
   var bSil=document.getElementById('btn-silence'); if(bSil) bSil.onclick=toggleSilence1h;
   var bSelfSil=document.getElementById('btn-self-silence'); if(bSelfSil) bSelfSil.onclick=toggleSilence1h;
   var bCopyC=document.getElementById('btn-copy-chat'); if(bCopyC) bCopyC.onclick=copyChatToClipboard;
-  var bIdea=document.getElementById('btn-status-idea'); if(bIdea) bIdea.onclick=randomStatusIdea;
+  /* randomStatusIdea disabled — btn-status-idea removed */
   document.addEventListener('keydown', function(e){
     if((e.ctrlKey||e.metaKey) && e.shiftKey && (e.key==='L'||e.key==='l')){
       e.preventDefault(); clearEditor(); updateCharCount(); updateSendEnabled(); showToast('Yazı kutusu temizlendi');
@@ -5485,6 +6039,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="modal" style="width:420px;max-width:95vw;max-height:85vh;overflow:auto">
     <div class="modal-header"><span>Ayarlar</span><button type="button" id="settings-close">&times;</button></div>
     <div class="modal-body">
+      <div class="settings-cat">🔊 Ses & bildirim</div>
       <div class="settings-row"><span>Mesaj sesi</span><input type="checkbox" id="set-sound" checked></div>
       <div class="settings-row"><span>Titreşim sesi</span><input type="checkbox" id="set-nudge-sound" checked></div>
       <div class="settings-row"><span>Titreşim tipi</span>
@@ -5496,16 +6051,16 @@ document.addEventListener('DOMContentLoaded',function(){
           <option value="chirp">Cıvıltı</option>
         </select>
       </div>
+      <div class="settings-row"><span>Gönderince kısa bip</span><input type="checkbox" id="set-send-beep"></div>
       <div class="settings-row"><span>Çevrimiçi bildirim</span><input type="checkbox" id="set-online-alert" checked></div>
       <div class="settings-row"><span>Tarayıcı bildirimi</span><input type="checkbox" id="set-push"></div>
-      <div class="settings-row"><span>Son görülmeyi gizle</span><input type="checkbox" id="set-hide-seen"></div>
-      <div class="settings-row"><span>Compact arkadaş listesi</span><input type="checkbox" id="set-compact"></div>
-      <div class="settings-row"><span>Son aktifliğe göre sırala</span><input type="checkbox" id="set-sort-recent"></div>
-      <div class="settings-row"><span>Çevrimdışıları soluk göster</span><input type="checkbox" id="set-dim-offline" checked></div>
-      <div class="settings-row"><span>Odak modu (sade menü)</span><input type="checkbox" id="set-focus"></div>
       <div class="settings-row"><span>Sekme başlığı yanıp sönsün</span><input type="checkbox" id="set-flash-title" checked></div>
-      <div class="settings-row"><span>Son sohbeti hatırla</span><input type="checkbox" id="set-remember-chat" checked></div>
-      <div class="settings-row"><span>Gönderince kısa bip</span><input type="checkbox" id="set-send-beep"></div>
+
+      <div class="settings-cat">👁️ Gizlilik</div>
+      <div class="settings-row"><span>Son görülmeyi gizle</span><input type="checkbox" id="set-hide-seen"></div>
+      <div class="settings-row"><span>5 dk sonra otomatik uzakta</span><input type="checkbox" id="set-idle-away" checked></div>
+
+      <div class="settings-cat">💬 Sohbet görünümü</div>
       <div class="settings-row"><span>Mesaj saati biçimi</span>
         <select id="set-time-format" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text)">
           <option value="exact">Tam saat (14:32)</option>
@@ -5515,15 +6070,23 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <div class="settings-row"><span>Saatleri gizle</span><input type="checkbox" id="set-hide-ts"></div>
       <div class="settings-row"><span>Sıkı mesaj aralığı</span><input type="checkbox" id="set-density"></div>
-      <div class="settings-row"><span>5 dk sonra otomatik uzakta</span><input type="checkbox" id="set-idle-away" checked></div>
-      <div class="settings-row"><span>Sohbet arka plan rengi</span><input type="color" id="set-chat-bg" value="#ffffff"></div>
-      <div class="settings-row"><span>Balon yuvarlaklığı</span><input type="range" id="set-radius" min="0" max="20" value="8"></div>
-      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
-      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+      <div class="settings-row"><span>Sohbet arka planı</span><input type="color" id="set-chat-bg" value="#ffffff"></div>
+      <div class="settings-row"><span>Balon köşe yuvarlaklığı</span><input type="range" id="set-radius" min="0" max="20" value="8"></div>
+
+      <div class="settings-cat">👥 Arkadaş listesi</div>
+      <div class="settings-row"><span>Compact liste</span><input type="checkbox" id="set-compact"></div>
+      <div class="settings-row"><span>Son mesaja göre sırala</span><input type="checkbox" id="set-sort-recent"></div>
+      <div class="settings-row"><span>Çevrimdışıları soluk göster</span><input type="checkbox" id="set-dim-offline" checked></div>
+      <div class="settings-row"><span>Son sohbeti hatırla</span><input type="checkbox" id="set-remember-chat" checked></div>
+
+      <div class="settings-cat">🎛️ Arayüz</div>
+      <div class="settings-row"><span>Odak modu (sade menü)</span><input type="checkbox" id="set-focus"></div>
+
+      <div class="settings-cat">🔐 Hesap</div>
       <button type="button" class="btn-primary" id="set-open-recovery" style="width:100%;margin-bottom:8px">Kurtarma kodu</button>
       <button type="button" class="btn-primary" id="set-open-password" style="width:100%;margin-bottom:8px">Şifre değiştir</button>
       <button type="button" class="btn-primary" id="set-clear-chat" onclick="window.__msnClearChat();return false;" style="width:100%;margin-bottom:8px;background:#c0392b!important;border-color:#922b1f!important">Sohbeti / notları temizle</button>
-      <p style="font-size:11px;color:var(--text3);margin-top:8px">Ayarlar bu tarayıcıda saklanır. Notlar için soldaki “Notlarım”a tıkla.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">Ayarlar bu tarayıcıda saklanır.</p>
     </div>
   </div>
 </div>
