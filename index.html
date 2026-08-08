@@ -1918,6 +1918,52 @@ a.status-link{ color:var(--link); text-decoration:underline; cursor:pointer; wor
   border:1px solid var(--border2); background:var(--surface2); color:var(--text); white-space:nowrap;
 }
 .bj-side-actions button:hover{ background:var(--hover); }
+
+.contact-nick{ color: var(--text2) !important; opacity: 0.95; }
+.contact-preview{ color: var(--text2) !important; opacity: 0.9; }
+.contact-status-msg{ color: var(--text2) !important; }
+[data-theme="matrix"] .contact-nick,
+[data-theme="matrix"] .contact-preview,
+[data-theme="matrix-light"] .contact-nick,
+[data-theme="matrix-light"] .contact-preview{ color: #86efac !important; }
+[data-theme="cyberpunk"] .contact-nick,
+[data-theme="cyberpunk"] .contact-preview{ color: #f0abfc !important; }
+[data-theme="nord"] .contact-nick,
+[data-theme="nord"] .contact-preview{ color: #d8dee9 !important; }
+[data-theme="dark"] .contact-nick,
+[data-theme="dark"] .contact-preview{ color: #e8c9a0 !important; }
+[data-theme="forest"] .contact-nick,
+[data-theme="forest"] .contact-preview,
+[data-theme="forest-dark"] .contact-nick,
+[data-theme="forest-dark"] .contact-preview{ color: #bbf7d0 !important; }
+.music-plat{ margin-right:4px; }
+
+/* Presence colors locked across all themes */
+.status-dot.online, .status-pip.online { background:#27ae60 !important; }
+.status-dot.busy, .status-pip.busy { background:#e74c3c !important; }
+.status-dot.away, .status-pip.away { background:#f1c40f !important; }
+.status-dot.offline, .status-pip.offline { background:#95a5a6 !important; }
+.music-plat-img{ width:14px; height:14px; vertical-align:-2px; margin-right:5px; border-radius:50%; display:inline-block; }
+.contact-nick, .contact-preview, .contact-status-msg{ color: var(--text2) !important; opacity:1 !important; }
+
+.pin-ico, .mute-ico{
+  font-size:18px !important;
+  width:22px !important;
+  height:22px !important;
+  line-height:22px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 2px !important;
+  opacity:1 !important;
+  vertical-align:middle;
+}
+.star-btn, .star-btn.on{
+  font-size:18px !important;
+  width:22px !important;
+  height:22px !important;
+  line-height:22px !important;
+}
 </style>
 </head>
 <body>
@@ -1967,7 +2013,9 @@ a.status-link{ color:var(--link); text-decoration:underline; cursor:pointer; wor
         <div class="form-group"><label>Görünen ad</label>
           <input type="text" id="reg-name" placeholder="Adınız"></div>
         <div class="form-group"><label>Kullanıcı adı</label>
-          <input type="text" id="reg-user" placeholder="kullaniciadi"></div>
+          <input type="text" id="reg-user" placeholder="ornek_kullanici" pattern="[a-zA-Z0-9_\-]{3,20}" title="Harf, rakam, _ ve -">
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">İzinli: harf, rakam, <b>_</b> ve <b>-</b> (örn. ali_veli, ali-veli)</div>
+        </div>
         <div class="form-group"><label>Parola</label>
           <input type="password" id="reg-pass" placeholder="En az 4 karakter"></div>
         <div class="form-group"><label>Parola tekrar</label>
@@ -2508,15 +2556,120 @@ function avatarHtml(name,photo,cls,status){
   return '<div class="avatar '+(cls||'')+'"'+style+'>'+inner+dot+'</div>';
 }
 
+
+/* ===== Shared user directory (username lookup without invite) ===== */
+var KV_USER = 'ilkgzmsn';
+var KV_BASE = 'https://keyvalue.immanuel.co/api/KeyVal';
+
+function b64encode(str){
+  try{
+    return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }catch(e){
+    try{ return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }catch(e2){ return ''; }
+  }
+}
+function b64decode(str){
+  try{
+    str = String(str||'').replace(/-/g,'+').replace(/_/g,'/');
+    while(str.length % 4) str += '=';
+    return decodeURIComponent(escape(atob(str)));
+  }catch(e){
+    try{ return atob(str); }catch(e2){ return ''; }
+  }
+}
+function kvGet(key){
+  return fetch(KV_BASE+'/GetValue/'+encodeURIComponent(KV_USER)+'/'+encodeURIComponent(key), {method:'GET', mode:'cors'})
+    .then(function(r){ return r.text(); })
+    .then(function(t){
+      t = (t||'').trim();
+      if(!t || t==='null' || t==='""') return null;
+      try{ t = JSON.parse(t); }catch(e){}
+      if(typeof t !== 'string') return t;
+      var decoded = b64decode(t);
+      if(!decoded) return null;
+      try{ return JSON.parse(decoded); }catch(e){ return decoded; }
+    })
+    .catch(function(){ return null; });
+}
+function kvSet(key, obj){
+  var raw = typeof obj === 'string' ? obj : JSON.stringify(obj);
+  var v = b64encode(raw);
+  if(!v) return Promise.resolve(false);
+  var url = KV_BASE+'/UpdateValue/'+encodeURIComponent(KV_USER)+'/'+encodeURIComponent(key)+'/'+v;
+  return fetch(url, {method:'POST', mode:'cors'})
+    .then(function(r){ return r.ok; })
+    .catch(function(){ return false; });
+}
+function kvPublishUser(){
+  if(!currentUser) return Promise.resolve();
+  var payload = {
+    a: currentUser.alias,
+    n: currentUser.name || currentUser.alias,
+    p: currentUser.photo || '',
+    u: Date.now()
+  };
+  return kvSet('u_'+currentUser.alias, payload);
+}
+function kvLookupUser(alias){
+  return kvGet('u_'+alias).then(function(data){
+    if(!data || typeof data !== 'object') return null;
+    if(!data.a && !data.n) return null;
+    return {
+      alias: data.a || alias,
+      name: data.n || alias,
+      photo: data.p || ''
+    };
+  });
+}
+function kvSendRequest(to, payload){
+  return kvGet('in_'+to).then(function(inbox){
+    if(!inbox || typeof inbox !== 'object') inbox = {};
+    inbox[payload.from] = {
+      fn: payload.fromName || payload.from,
+      fp: payload.fromPhoto || '',
+      t: payload.time || Date.now(),
+      s: 'pending'
+    };
+    return kvSet('in_'+to, inbox);
+  });
+}
+function kvPullInbox(){
+  if(!currentUser) return;
+  kvGet('in_'+currentUser.alias).then(function(inbox){
+    if(!inbox || typeof inbox !== 'object') return;
+    Object.keys(inbox).forEach(function(from){
+      var r = inbox[from];
+      if(!r || r.s === 'accepted' || r.s === 'rejected') return;
+      incomingRequests[from] = {
+        from: from,
+        fromName: r.fn || from,
+        fromPhoto: r.fp || '',
+        time: r.t || Date.now()
+      };
+    });
+    updateNotifBadge();
+  });
+}
+function kvClearRequest(from){
+  if(!currentUser) return Promise.resolve();
+  return kvGet('in_'+currentUser.alias).then(function(inbox){
+    if(!inbox || typeof inbox !== 'object') return;
+    delete inbox[from];
+    return kvSet('in_'+currentUser.alias, inbox);
+  });
+}
+
 function initGun(){
   try{if(typeof Gun==='undefined')return false;
     gun=Gun({
       peers:[
         'https://peer.wallie.io/gun',
         'https://gun-manhattan.herokuapp.com/gun',
-        'https://relay.gun.eco/gun'
+        'https://relay.gun.eco/gun',
+        'https://gun-us.herokuapp.com/gun'
       ],
-      localStorage:false, radisk:false
+      localStorage:true,
+      radisk:false
     });
     gunReady=true;return true;}catch(e){return false;}
 }
@@ -2713,7 +2866,11 @@ function showForm(w){
 function register(){
   hideMsg();
   var name=document.getElementById('reg-name').value.trim();
-  var alias=document.getElementById('reg-user').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  var aliasRaw=document.getElementById('reg-user').value.trim().toLowerCase();
+  if(/[^a-z0-9_-]/.test(aliasRaw)){
+    return showError('Kullanıcı adında sadece harf, rakam, _ ve - kullanılabilir.');
+  }
+  var alias=aliasRaw.replace(/[^a-z0-9_-]/g,'');
   var pass=document.getElementById('reg-pass').value,pass2=document.getElementById('reg-pass2').value;
   if(!name||!alias||!pass)return showError('Tüm alanları doldurun.');
   if(alias.length<3)return showError('Kullanıcı adı en az 3 karakter.');
@@ -2740,7 +2897,7 @@ function register(){
 }
 function login(){
   hideMsg();
-  var alias=document.getElementById('login-user').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  var alias=document.getElementById('login-user').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'');
   var pass=document.getElementById('login-pass').value;
   if(!alias||!pass)return showError('Kullanıcı adı ve parola girin.');
   setBtn('btn-login',true,'Giriş...');
@@ -2828,6 +2985,8 @@ function enterMessenger(){
   document.getElementById('my-displayname').textContent=currentUser.name;
   try{ updateMyMusicLine(); }catch(e){}
   try{ publishDirectory(); }catch(e){}
+  try{ kvPublishUser(); }catch(e){}
+  try{ kvPublishUser(); }catch(e){}
   document.getElementById('window-title').textContent='İlkgüz MSN — '+currentUser.name;
   var st0=document.getElementById('my-status-select').value||'online';
   setAvatarEl(document.getElementById('my-avatar'),currentUser.name,currentUser.photo,st0);
@@ -2872,8 +3031,10 @@ function cycleStatusFilter(){
 }
 function cycleAlpha(){
   if(alphaMode==='none')alphaMode='asc';else if(alphaMode==='asc')alphaMode='desc';else alphaMode='none';
-  var btn=document.getElementById('filter-alpha');btn.classList.toggle('active',alphaMode!=='none');
-  btn.textContent=alphaMode==='none'?'A → Z':(alphaMode==='asc'?'A → Z ✓':'Z → A ✓');
+  var btn=document.getElementById('filter-alpha');
+  btn.classList.toggle('active',alphaMode!=='none');
+  btn.textContent=alphaMode==='none'?'A→Z':(alphaMode==='asc'?'A→Z':'Z→A');
+  btn.title = alphaMode==='none'?'Alfabetik sıralama':(alphaMode==='asc'?'A dan Z ye':'Z den A ya');
   renderContacts();
 }
 function toggleFavFilter(){favOnly=!favOnly;document.getElementById('filter-fav').classList.toggle('active',favOnly);renderContacts();}
@@ -2947,11 +3108,12 @@ function renderContacts(){
     var unc=getUnread(alias);
     var unBadge = unc>0 ? '<span class="unread-badge">'+(unc>9?'9+':unc)+'</span>' : '';
     var muteIco = isMuted(alias) ? '<span class="mute-ico" title="Sessizde">🔇</span>' : '';
+    var pinIco = isPinned(alias) ? '<span class="pin-ico" title="Sabit">📌</span>' : '';
     var draftK=PREFIX+'draft_'+currentUser.alias+'_'+alias;
     var hasDraft=!!sGet(draftK);
     var nick = getNickOnly(alias);
     var nickHtml = nick ? '<div class="contact-nick">'+escapeHtml(nick)+'</div>' : '';
-    item.innerHTML=avatarHtml(f.name,f.photo,'sm',st)+'<div class="contact-details"><div class="contact-name-row"><span class="contact-name">'+escapeHtml(dname)+'</span>'+unBadge+muteIco+(hasDraft?'<span class="draft-dot" title="Taslak">●</span>':'')+'<button type="button" class="star-btn '+(f.fav?'on':'')+'" title="Favori">'+(f.fav?'★':'☆')+'</button><button type="button" class="contact-menu-btn" title="Menü" data-alias="'+escapeHtml(alias)+'">⋮</button></div>'+nickHtml+'<div class="contact-status-msg">'+escapeHtml(sub)+'</div>'+(prev?'<div class="contact-preview">'+escapeHtml(prev)+'</div>':'')+'</div>';
+    item.innerHTML=avatarHtml(f.name,f.photo,'sm',st)+'<div class="contact-details"><div class="contact-name-row"><span class="contact-name">'+escapeHtml(dname)+'</span>'+unBadge+pinIco+muteIco+(hasDraft?'<span class="draft-dot" title="Taslak">●</span>':'')+'<button type="button" class="star-btn '+(f.fav?'on':'')+'" title="Favori">'+(f.fav?'★':'☆')+'</button><button type="button" class="contact-menu-btn" title="Menü" data-alias="'+escapeHtml(alias)+'">⋮</button></div>'+nickHtml+'<div class="contact-status-msg">'+escapeHtml(sub)+'</div>'+(prev?'<div class="contact-preview">'+escapeHtml(prev)+'</div>':'')+'</div>';
     var tip = dname+' (@'+alias+')\n'+statusLabel(st);
     if(nick) tip += '\nTakma: '+nick;
     if(f.customStatus) tip += '\n'+f.customStatus;
@@ -3547,7 +3709,12 @@ function copyChatToClipboard(){
   if(!activeChat){ showToast('Sohbet aç'); return; }
   var id = getChatKey(activeChat);
   var arr = msgCache[id] || localGetMsgs(id) || [];
-  var lines = arr.filter(function(m){ return m && !m.deleted && m.type!=='nudge'; }).map(function(m){
+  var usable = arr.filter(function(m){ return m && !m.deleted && m.type!=='nudge'; });
+  if(!usable.length){
+    showToast('Kopyalanacak herhangi bir mesaj gönderilmedi');
+    return;
+  }
+  var lines = usable.map(function(m){
     var t = m.time ? new Date(m.time).toLocaleString('tr-TR') : '';
     return '['+t+'] '+(m.fromName||m.from)+': '+(m.text||'');
   });
@@ -4141,59 +4308,165 @@ function playDuelGame(kind){
 function parseMusicDisplay(raw){
   raw = (raw||'').trim();
   if(!raw) return null;
-  var url = null, label = raw, icon = '🎵';
+  var url = null, label = '', icon = 'music';
   var m = raw.match(/https?:\/\/[^\s]+/i);
   if(m){
     url = m[0];
     label = raw.replace(m[0], '').trim();
     try{
       var host = (new URL(url)).hostname.replace(/^www\./,'');
-      if(host.indexOf('spotify')>=0) icon='🟢';
-      else if(host.indexOf('youtube')>=0||host.indexOf('youtu.be')>=0) icon='▶️';
-      else if(host.indexOf('soundcloud')>=0) icon='🟠';
-      else if(host.indexOf('apple')>=0||host.indexOf('music.apple')>=0) icon='🍎';
-      else if(host.indexOf('deezer')>=0) icon='🎵';
-      else icon='🔗';
-      // Try to extract title from path if user only pasted URL
-      if(!label){
-        var path = (new URL(url)).pathname || '';
-        // Spotify: /track/xxx — no title in URL; keep generic short hint
-        if(host.indexOf('spotify')>=0) label = 'Spotify parçası';
-        else if(host.indexOf('youtube')>=0||host.indexOf('youtu.be')>=0) label = 'YouTube videosu';
-        else label = host;
-      }
-    }catch(e){ icon='🔗'; if(!label) label = 'şarkı'; }
+      if(host.indexOf('spotify')>=0) icon = 'spotify';
+      else if(host.indexOf('youtube')>=0 || host.indexOf('youtu.be')>=0 || host.indexOf('music.youtube')>=0) icon = 'ytmusic';
+      else icon = 'music';
+    }catch(e){ icon = 'music'; }
+  } else {
+    label = raw;
+    icon = 'music';
   }
-  // Prefer "Sanatçı - Şarkı" text the user typed alongside the URL
   return { url:url, label:label, icon:icon, raw:raw };
 }
+function platformIconHtml(kind){
+  if(kind==='spotify'){
+    return '<svg class="music-plat-img" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#000" d="M16.9 10.4c-2.7-1.6-7.1-1.8-9.7-.9-.4.1-.8-.1-.9-.5-.1-.4.1-.8.5-.9 3-.9 8-.7 11.1 1.1.4.2.5.7.3 1-.2.3-.7.4-1.1.2zm-.2 2.3c-.2.3-.6.4-.9.2-2.2-1.4-5.7-1.8-8.3-1-.3.1-.7-.1-.8-.4-.1-.3.1-.7.4-.8 3.1-.9 6.9-.5 9.5 1.1.3.2.4.6.1.9zm-1.1 2.2c-.2.2-.4.3-.7.2-2-.9-4.4-1.1-7.2-.6-.2.1-.5-.1-.5-.3-.1-.3.1-.5.3-.6 3.1-.5 5.8-.3 8 .7.3.1.3.4.1.6z"/></svg>';
+  }
+  if(kind==='ytmusic'){
+    return '<svg class="music-plat-img" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#FF0000"/><circle cx="12" cy="12" r="5.2" fill="none" stroke="#fff" stroke-width="1.4"/><path fill="#fff" d="M10.2 8.8v6.4l5.2-3.2z"/></svg>';
+  }
+  return '<span class="music-plat">🎵</span>';
+}
+function musicOembedUrl(trackUrl){
+  try{
+    var host = (new URL(trackUrl)).hostname;
+    if(host.indexOf('spotify')>=0) return 'https://open.spotify.com/oembed?url='+encodeURIComponent(trackUrl);
+    if(host.indexOf('youtube')>=0||host.indexOf('youtu.be')>=0) return 'https://www.youtube.com/oembed?url='+encodeURIComponent(trackUrl)+'&format=json';
+    if(host.indexOf('soundcloud')>=0) return 'https://soundcloud.com/oembed?url='+encodeURIComponent(trackUrl)+'&format=json';
+  }catch(e){}
+  return null;
+}
+function musicSongLinkUrl(trackUrl){
+  return 'https://api.song.link/v1-alpha.1/links?url='+encodeURIComponent(trackUrl);
+}
+function resolveMusicLabel(trackUrl, manualLabel, done){
+  if(manualLabel && String(manualLabel).trim()){ done(String(manualLabel).trim()); return; }
+  var finished=false;
+  function finish(label){ if(finished) return; finished=true; done(label||'Parça'); }
+
+  function fromSongLinkData(data){
+    if(!data||typeof data!=='object') return null;
+    if(typeof data==='string'){ try{data=JSON.parse(data);}catch(e){return null;} }
+    if(data.contents){ try{data=JSON.parse(data.contents);}catch(e){} }
+    var entities=data.entitiesByUniqueId||{};
+    var ordered=[];
+    if(data.entityUniqueId && entities[data.entityUniqueId]) ordered.push(entities[data.entityUniqueId]);
+    Object.keys(entities).forEach(function(k){
+      if(String(k).indexOf('SPOTIFY')===0) ordered.unshift(entities[k]);
+      else ordered.push(entities[k]);
+    });
+    for(var i=0;i<ordered.length;i++){
+      var e=ordered[i]; if(!e) continue;
+      var title=String(e.title||'').trim();
+      var artist=String(e.artistName||'').trim();
+      if(artist&&title) return artist+' - '+title;
+      if(title) return title;
+    }
+    return null;
+  }
+
+  function scrapeSpotifyPage(){
+    var prox='https://api.allorigins.win/raw?url='+encodeURIComponent(trackUrl);
+    return fetch(prox).then(function(r){ return r.text(); }).then(function(txt){
+      var artist='', title='';
+      var mt = txt.match(/property="og:title"\s+content="([^"]+)"/i) || txt.match(/content="([^"]+)"\s+property="og:title"/i);
+      if(mt) title = mt[1].trim();
+      var md = txt.match(/property="og:description"\s+content="([^"]+)"/i) || txt.match(/content="([^"]+)"\s+property="og:description"/i);
+      if(md){
+        // "The Weeknd · After Hours · Song · 2020"
+        var parts = md[1].split(/\s*[·|]\s*/);
+        if(parts[0]) artist = parts[0].trim();
+      }
+      // Sometimes title is "Song - Artist"
+      if(!artist && title.indexOf(' - ')>=0){
+        var sp=title.split(' - ');
+        if(sp.length>=2){ title=sp[0].trim(); artist=sp.slice(1).join(' - ').replace(/\s*-\s*song by.*$/i,'').trim(); }
+      }
+      if(artist && title) return artist+' - '+title;
+      if(title) return title;
+      throw new Error('no meta');
+    });
+  }
+
+  function trySongLink(){
+    var direct='https://api.song.link/v1-alpha.1/links?url='+encodeURIComponent(trackUrl);
+    var proxied='https://api.allorigins.win/get?url='+encodeURIComponent(direct);
+    return fetch(direct,{mode:'cors'}).then(function(r){ if(!r.ok) throw new Error('x'); return r.json(); })
+      .then(function(d){ var L=fromSongLinkData(d); if(!L) throw new Error('empty'); return L; })
+      .catch(function(){
+        return fetch(proxied).then(function(r){ return r.json(); }).then(function(d){
+          var L=fromSongLinkData(d); if(!L) throw new Error('empty'); return L;
+        });
+      });
+  }
+
+  // Order: song.link → Spotify page scrape → oEmbed
+  trySongLink().then(function(L){ finish(L); }).catch(function(){
+    var host='';
+    try{ host=(new URL(trackUrl)).hostname; }catch(e){}
+    if(host.indexOf('spotify')>=0){
+      scrapeSpotifyPage().then(function(L){ finish(L); }).catch(function(){
+        var oe=musicOembedUrl(trackUrl);
+        if(!oe){ finish('Parça'); return; }
+        fetch(oe).then(function(r){ return r.json(); }).then(function(data){
+          finish((data&&data.title)||'Parça');
+        }).catch(function(){ finish('Parça'); });
+      });
+    } else {
+      var oe=musicOembedUrl(trackUrl);
+      if(!oe){ finish('Parça'); return; }
+      fetch(oe).then(function(r){ return r.json(); }).then(function(data){
+        var title=String((data&&data.title)||'').trim();
+        var artist=String((data&&data.author_name)||'').trim();
+        if(artist&&title) finish(artist+' - '+title);
+        else finish(title||artist||'Parça');
+      }).catch(function(){ finish('Parça'); });
+    }
+  });
+}
+
 function updateMyMusicLine(){
   var el = document.getElementById('my-music-line');
   if(!el || !currentUser) return;
   var raw = sGet(PREFIX+'music_'+currentUser.alias)||'';
   var info = parseMusicDisplay(raw);
   if(!info){ el.style.display='none'; el.removeAttribute('href'); return; }
-  el.style.display='block';
-  el.innerHTML = '<span class="marquee-inner">'+escapeHtml(info.icon)+' '+escapeHtml(info.label)+'</span>';
-  el.title = info.raw;
-  if(info.url){
-    el.href = info.url;
-    el.onclick = function(e){
-      e.preventDefault();
-      confirmOpenLink(info.url);
-    };
-  } else {
-    el.href = '#';
-    el.onclick = function(e){ e.preventDefault(); };
+  function paint(label){
+    el.style.display='block';
+    el.innerHTML = '<span class="marquee-inner">'+platformIconHtml(info.icon)+'<span class="music-title">'+escapeHtml(label||'Şarkı')+'</span></span>';
+    el.title = (label||'') + (info.url ? ('\n'+info.url) : '');
+    if(info.url){
+      el.href = info.url;
+      el.onclick = function(e){ e.preventDefault(); confirmOpenLink(info.url); };
+    } else {
+      el.href = '#';
+      el.onclick = function(e){ e.preventDefault(); };
+    }
+    setTimeout(function(){
+      var inner = el.querySelector('.marquee-inner');
+      if(inner && inner.scrollWidth > el.clientWidth + 4) el.classList.add('is-overflow');
+      else el.classList.remove('is-overflow');
+    }, 50);
   }
-  // overflow marquee
-  setTimeout(function(){
-    var inner = el.querySelector('.marquee-inner');
-    if(inner && inner.scrollWidth > el.clientWidth + 4) el.classList.add('is-overflow');
-    else el.classList.remove('is-overflow');
-  }, 50);
+  if(info.label){ paint(info.label); return; }
+  if(info.url){
+    var cacheKey = PREFIX+'music_title_'+currentUser.alias;
+    var cached = sGet(cacheKey);
+    // Invalidate short/cache that looks like title-only if we can refresh
+    paint(cached || 'Yükleniyor...');
+    resolveMusicLabel(info.url, null, function(label){
+      paint(label);
+      try{ sSet(cacheKey, label); }catch(e){}
+    });
+  } else paint('Şarkı');
 }
-
 
 
 function handleInviteQuery(){
@@ -4227,18 +4500,22 @@ function publishDirectory(){
     photo: currentUser.photo||'',
     updated: Date.now()
   };
-  // Always local mirror of known users on this device
   try{
     var dir = JSON.parse(sGet(PREFIX+'dir_cache')||'{}');
     dir[currentUser.alias] = payload;
     sSet(PREFIX+'dir_cache', JSON.stringify(dir));
   }catch(e){}
+  if(!gun) try{ initGun(); }catch(e){}
+  kvPublishUser();
   if(gun){
     try{
       gun.get(PREFIX+'dir').get(currentUser.alias).put(payload);
-      gun.get(PREFIX+'accounts').get(currentUser.alias).get('name').put(payload.name);
-      gun.get(PREFIX+'accounts').get(currentUser.alias).get('alias').put(payload.alias);
-      gun.get(PREFIX+'accounts').get(currentUser.alias).get('photo').put(payload.photo||'');
+      gun.get(PREFIX+'accounts').get(currentUser.alias).put({
+        alias: payload.alias, name: payload.name, photo: payload.photo||'', updated: payload.updated
+      });
+      gun.get(PREFIX+'presence').get(currentUser.alias).put({
+        name: payload.name, photo: payload.photo||'', status: (document.getElementById('my-status-select')||{}).value||'online', lastSeen: Date.now()
+      });
     }catch(e){}
   }
 }
@@ -4624,13 +4901,13 @@ function unblockUser(alias){
 function openBlockedModal(){
   var box = document.getElementById('blocked-list');
   var b = getBlocks(); var keys = Object.keys(b);
-  if(!keys.length){ box.innerHTML = '<p style="color:var(--text3);font-size:13px">Kimse yok.</p>'; }
+  if(!keys.length){ box.innerHTML = '<p class="blocked-empty">Engellenen kimse yok.</p>'; }
   else {
     box.innerHTML = keys.map(function(a){
-      return '<div class="settings-row"><span>@'+escapeHtml(a)+'</span><button type="button" data-unb="'+escapeHtml(a)+'">Kaldır</button></div>';
+      return '<div class="blocked-item"><div class="blocked-text"><b>@'+escapeHtml(a)+'</b></div><div class="blocked-actions"><button type="button" class="btn-reject" data-unb="'+escapeHtml(a)+'">Engeli kaldır</button></div></div>';
     }).join('');
     box.querySelectorAll('[data-unb]').forEach(function(btn){
-      btn.onclick = function(){ unblockUser(btn.getAttribute('data-unb')); };
+      btn.onclick = function(){ unblockUser(btn.getAttribute('data-unb')); openBlockedModal(); };
     });
   }
   document.getElementById('blocked-modal').classList.add('open');
@@ -5020,7 +5297,11 @@ function renderOneMessage(msg,alias,isContinuation,msgIndex){
     if(msg.type==='image' && msg.image){
       bodyHtml += '<img class="msg-img" src="'+msg.image+'" alt="img">';
     } else if(msg.type==='game'){
-      bodyHtml += '<div class="game-card">'+escapeHtml(msg.text||'')+'</div>';
+      if(msg.html){
+        bodyHtml += sanitizeMsgHTML(msg.html);
+      } else {
+        bodyHtml += '<div class="game-card">'+escapeHtml(msg.text||'')+'</div>';
+      }
     } else {
       bodyHtml += msg.html ? sanitizeMsgHTML(msg.html) : renderFormattedText(msg.text||'');
       bodyHtml = autolinkConfirm(bodyHtml);
@@ -5290,7 +5571,8 @@ function searchUser(){
     try{ raw = decodeURIComponent(addMatch[1]); }catch(e){ raw = addMatch[1]; }
   }
   var fromInvite = parseInviteCode(raw);
-  var alias = (fromInvite || raw).toLowerCase().replace(/[^a-z0-9_]/g,'');
+  var usedInvite = !!fromInvite;
+  var alias = (fromInvite || raw).toLowerCase().replace(/[^a-z0-9_-]/g,'');
   // strip garbage tokens
   if(alias.indexOf('null')===0 && alias.indexOf('srcdoc')>=0){
     showToast('Geçersiz davet. 📨 ile kodu yeniden kopyala'); return;
@@ -5316,40 +5598,53 @@ function searchUser(){
   }catch(e){}
   // 3) Even without Gun: allow adding by exact username (pending until they accept via Gun)
   if(!gunReady) try{ initGun(); }catch(e){}
+  function notFoundMsg(){
+    var em=['😕','😢','🤔','😮','😵','🥺','🙁','😟','😶'];
+    var msg = 'Böyle bir kullanıcı bulunamadı '+em[Math.floor(Math.random()*em.length)];
+    try{ document.getElementById('status-text').textContent = msg; }catch(e){}
+    showToast(msg, 4500);
+  }
+  // Davet kodu ile: dizin olmasa da önizleme aç (karşı taraf kodunu paylaştıysa)
+  if(usedInvite){
+    showPreview({alias:alias, name:alias, photo:''});
+    showToast('Davet kodu: istek gönder, arkadaşın Bildirimler’den kabul etsin');
+    return;
+  }
   if(!gun){
-    // Soft add: create pending friend request locally + show preview
-    showPreview({alias:alias,name:alias,photo:''});
-    showToast('Çevrimdışı dizin — istek Gun bağlanınca iletilir');
+    notFoundMsg();
     return;
   }
   var resolved=false;
   function fail(){
     if(resolved) return;
     resolved=true;
-    // Still allow manual add by username
-    showPreview({alias:alias,name:alias,photo:''});
-    showToast('Dizinde yok — yine de istek gönderebilirsin');
+    notFoundMsg();
   }
-  setTimeout(fail, 5000);
+  setTimeout(fail, 3500);
   // directory first
   gun.get(PREFIX+'dir').get(alias).once(function(acc){
     if(resolved) return;
-    if(acc && (acc.alias||acc.name)){
-      resolved=true;
-      try{
-        var cache=JSON.parse(sGet(PREFIX+'dir_cache')||'{}');
-        cache[alias]=acc; sSet(PREFIX+'dir_cache', JSON.stringify(cache));
-      }catch(e){}
-      showPreview(acc);
+    if(acc && typeof acc === 'object' && (acc.alias || acc.name) && !acc['_']){
+      // Gun metadata only?
+      var hasReal = (acc.alias && String(acc.alias).length>1) || (acc.name && String(acc.name).length>0);
+      if(hasReal){
+        resolved=true;
+        try{
+          var cache=JSON.parse(sGet(PREFIX+'dir_cache')||'{}');
+          cache[alias]={alias:alias,name:acc.name||alias,photo:acc.photo||''};
+          sSet(PREFIX+'dir_cache', JSON.stringify(cache));
+        }catch(e){}
+        showPreview({alias:alias,name:acc.name||alias,photo:acc.photo||''});
+      }
     }
   });
   setTimeout(function(){
     if(resolved) return;
     gun.get(PREFIX+'accounts').get(alias).once(function(acc){
       if(resolved) return;
-      if(acc && (acc.alias||acc.name)){
+      if(acc && typeof acc === 'object' && (acc.alias || acc.name || acc.pass)){
         resolved=true;
-        showPreview(acc);
+        showPreview({alias:alias,name:acc.name||alias,photo:acc.photo||''});
       }
     });
   }, 400);
@@ -5357,9 +5652,10 @@ function searchUser(){
     if(resolved) return;
     gun.get(PREFIX+'presence').get(alias).once(function(p){
       if(resolved) return;
-      if(p && (p.name||p.status)){
+      // Only accept presence if name exists (not empty placeholder)
+      if(p && typeof p === 'object' && p.name && String(p.name).length>0){
         resolved=true;
-        showPreview({alias:alias,name:p.name||alias,photo:p.photo||''});
+        showPreview({alias:alias,name:p.name,photo:p.photo||''});
       }
     });
   }, 800);
@@ -5367,12 +5663,21 @@ function searchUser(){
 function sendFriendRequest(){
   if(!pendingPreview||!currentUser)return;
   var to=pendingPreview.alias;
-  var payload={from:currentUser.alias,fromName:currentUser.name,fromPhoto:currentUser.photo||'',time:Date.now(),status:'pending'};
-  if(gun){
+  if(to===currentUser.alias){ showToast('Kendine istek gönderemezsin'); return; }
+  var payload={from:currentUser.alias,fromName:currentUser.name,fromPhoto:currentUser.photo||'',time:Date.now(),status:'pending', to:to};
+  function pushGun(){
+    if(!gun) return;
     try{ gun.get(PREFIX+'requests').get(to).get(currentUser.alias).put(payload); }catch(e){}
+    try{ gun.get(PREFIX+'inbox').get(to).get(currentUser.alias).put(payload); }catch(e){}
     try{ publishDirectory(); }catch(e){}
+  try{ kvPublishUser(); }catch(e){}
   }
-  // local pending outbox so we can retry
+  pushGun();
+  try{ kvSendRequest(to, payload); }catch(e){}
+  try{ kvPublishUser(); }catch(e){}
+  // retry a few times — Gun peers are flaky
+  var tries=0;
+  var iv=setInterval(function(){ tries++; pushGun(); if(tries>=5) clearInterval(iv); }, 2000);
   try{
     var out=JSON.parse(sGet(PREFIX+'outbox_'+currentUser.alias)||'{}');
     out[to]=payload; sSet(PREFIX+'outbox_'+currentUser.alias, JSON.stringify(out));
@@ -5380,16 +5685,49 @@ function sendFriendRequest(){
   document.getElementById('add-modal').classList.remove('open');
   document.getElementById('add-friend-input').value='';
   document.getElementById('status-text').textContent='İstek gönderildi: @'+to;
-  showToast('İstek gönderildi — arkadaşın Bildirimler’den kabul etmeli');
+  showToast('İstek gönderildi. Arkadaşın Bildirimler’i açık tutsun (birkaç sn sürebilir)');
   pendingPreview=null;
 }
+function ingestRequest(key, data){
+  if(!key||key==='_'||!data) return;
+  if(data.status==='rejected'||data.status==='accepted'){ delete incomingRequests[key]; updateNotifBadge(); return; }
+  if(data.status==='pending' || (!data.status && (data.from||key))){
+    incomingRequests[key]={
+      from: data.from||key,
+      fromName: data.fromName||data.from||key,
+      fromPhoto: data.fromPhoto||'',
+      time: data.time||Date.now()
+    };
+    updateNotifBadge();
+  }
+}
 function listenRequests(){
-  if(!gun||!currentUser)return;
-  gun.get(PREFIX+'requests').get(currentUser.alias).map().on(function(data,key){
-    if(!key||key==='_')return;
-    if(!data||data.status==='rejected'||data.status==='accepted'){delete incomingRequests[key];updateNotifBadge();return;}
-    if(data.status==='pending'){incomingRequests[key]={from:data.from||key,fromName:data.fromName||key,fromPhoto:data.fromPhoto||'',time:data.time||Date.now()};updateNotifBadge();}
-  });
+  if(!currentUser) return;
+  function pull(){
+    if(!gun) return;
+    try{
+      gun.get(PREFIX+'requests').get(currentUser.alias).map().once(function(data,key){
+        ingestRequest(key, data);
+      });
+      // Also scan inbox path
+      gun.get(PREFIX+'inbox').get(currentUser.alias).map().once(function(data,key){
+        ingestRequest(key, data);
+      });
+    }catch(e){}
+  }
+  if(gun){
+    try{
+      gun.get(PREFIX+'requests').get(currentUser.alias).map().on(function(data,key){ ingestRequest(key, data); });
+      gun.get(PREFIX+'inbox').get(currentUser.alias).map().on(function(data,key){ ingestRequest(key, data); });
+    }catch(e){}
+  }
+  pull();
+  try{ kvPullInbox(); }catch(e){}
+  if(window._reqPoll) clearInterval(window._reqPoll);
+  window._reqPoll = setInterval(function(){
+    pull();
+    try{ kvPullInbox(); }catch(e){}
+  }, 2500);
 }
 function listenAcceptNotifs(){
   if(!gun||!currentUser)return;
@@ -5407,7 +5745,7 @@ function updateNotifBadge(){
 function openNotifs(){
   var list=document.getElementById('notif-list');list.innerHTML='';
   var keys=Object.keys(incomingRequests);
-  if(!keys.length&&!acceptNotifs.length)list.innerHTML='<p style="color:var(--text3);font-size:13px;text-align:center">Bildirim yok</p>';
+  if(!keys.length&&!acceptNotifs.length)list.innerHTML='<p class="notif-empty">Bildirim yok</p>';
   keys.forEach(function(k){
     var r=incomingRequests[k],div=document.createElement('div');div.className='notif-item';
     div.innerHTML='<div class="notif-meta">'+new Date(r.time).toLocaleString('tr-TR')+'</div><div class="notif-text"><b>'+escapeHtml(r.fromName)+'</b> (@'+r.from+') istek gönderdi.</div><div class="notif-actions"><button class="btn-accept" data-from="'+r.from+'">Kabul</button><button class="btn-reject" data-from="'+r.from+'">Reddet</button></div>';
@@ -5436,10 +5774,14 @@ function acceptRequest(from){
     gun.get(PREFIX+'requests').get(currentUser.alias).get(from).put({status:'accepted',from:from,time:Date.now()});
     gun.get(PREFIX+'accepts').get(from).set({from:currentUser.alias,fromName:currentUser.name,time:Date.now()});
   }
+  try{ kvClearRequest(from); }catch(e){}
+  try{ kvPublishUser(); }catch(e){}
   delete incomingRequests[from];updateNotifBadge();renderContacts();openNotifs();
+  showToast('@'+from+' eklendi');
 }
 function rejectRequest(from){
   if(gun)gun.get(PREFIX+'requests').get(currentUser.alias).get(from).put({status:'rejected',from:from,time:Date.now()});
+  try{ kvClearRequest(from); }catch(e){}
   delete incomingRequests[from];updateNotifBadge();openNotifs();
 }
 
@@ -5497,7 +5839,10 @@ function saveProfile(){
   var pm=document.getElementById('profile-music');
   var musicVal = pm ? (pm.value||'').trim() : '';
   sSet(PREFIX+'music_'+currentUser.alias, musicVal);
-  try{ publishMusicStatus(musicVal); }catch(e){}
+  try{
+      if(currentUser) sDel(PREFIX+'music_title_'+currentUser.alias);
+      publishMusicStatus(musicVal);
+    }catch(e){}
   try{ updateMyMusicLine(); }catch(e){}
   currentUser.name=name;sSet(PREFIX+'session',JSON.stringify(currentUser));
   var loc=localGetAccounts();if(loc[currentUser.alias]){loc[currentUser.alias].name=name;loc[currentUser.alias].photo=currentUser.photo||'';localSaveAccounts(loc);}
@@ -5535,7 +5880,7 @@ function getHatchScript(){
     ],
     classic: [
       { e:'💾', m:'Oturum açılıyor...' },
-      { e:'🪟', m:'Pencere yükleniyor...' },
+      { e:'📂', m:'Pencere yükleniyor...' },
       { e:'💬', m:'Messenger hazır.' }
     ],
     lavender: [
